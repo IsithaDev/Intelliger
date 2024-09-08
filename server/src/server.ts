@@ -17,9 +17,12 @@ const mongodb_url = getEnv("MONGODB_URL").replace(
 mongoose
   .connect(mongodb_url, { dbName: "intelliger" })
   .then(() => console.log("Mongodb connected successfully!"))
-  .catch((err) => console.error(err));
+  .catch((err) => {
+    console.error("Failed to connect to MongoDB", err);
+    process.exit(1);
+  });
 
-const server = createServer(app);
+export const server = createServer(app);
 
 server.listen(port, () => {
   console.log(`Server is running on port: ${port}`);
