@@ -1,5 +1,8 @@
 import { Document, model, Model, Schema } from "mongoose";
 import validator from "validator";
+import bcrypt from "bcrypt";
+
+import { Image } from "../types";
 
 interface IUser extends Document {
   _id: string;
@@ -8,11 +11,16 @@ interface IUser extends Document {
   username: string;
   gender: "male" | "female";
   dateOfBirth: Date;
-  role: "user" | "guide" | "lead-guide" | "admin";
+  images: {
+    profile: Image;
+    cover: Image;
+  };
+  role: "user" | "admin";
   email: string;
   password: string;
-  passwordConfirm: string;
+  passwordConfirm: string | undefined;
   passwordChangedAt: Date;
+  isActive: boolean;
 }
 
 interface IUserMethods {}
@@ -35,7 +43,10 @@ const userSchema = new Schema<IUser, IUserMethods, IUserModel>(
       maxlength: [10, "Last name must not exceed 10 characters."],
       trim: true,
     },
-    username: String,
+    username: {
+      type: String,
+      unique: true,
+    },
     gender: {
       type: String,
       required: [true, "Please specify your gender."],
@@ -50,6 +61,16 @@ const userSchema = new Schema<IUser, IUserMethods, IUserModel>(
       validate: {
         validator: (value) => value < new Date(),
         message: "Date of birth must be in the past.",
+      },
+    },
+    images: {
+      profile: {
+        publicId: String,
+        url: String,
+      },
+      cover: {
+        publicId: String,
+        url: String,
       },
     },
     role: {
@@ -92,6 +113,11 @@ const userSchema = new Schema<IUser, IUserMethods, IUserModel>(
       select: false,
     },
     passwordChangedAt: Date,
+    isActive: {
+      type: Boolean,
+      default: false,
+      select: false,
+    },
   },
   {
     timestamps: true,
@@ -99,6 +125,45 @@ const userSchema = new Schema<IUser, IUserMethods, IUserModel>(
     toObject: { virtuals: true },
   }
 );
+
+userSchema.virtual("fullName").get(function () {
+  return `${this.firstName} ${this.lastName}`;
+});
+
+userSchema.pre<IUserModel>(/^find/, async function (next) {
+  this.find({ isActive: { $ne: false } });
+
+  next();
+});
+
+userSchema.pre("save", async function (next) {
+  const baseUsername = `@${this.firstName.toLowerCase()}`;
+
+  let username = `${baseUsername}`;
+  let count = 0;
+
+  while ((await this.collection.countDocuments({ username })) > 0) {
+    ++count;
+    const paddedCount = count.toString().padStart(3, "0");
+    username = `${baseUsername}_${paddedCount}`;
+  }
+
+  this.username = username;
+
+  next();
+});
+
+userSchema.pre("save", async function (next) {
+  if (!this.isModified("password")) {
+    return next();
+  }
+
+  this.password = await bcrypt.hash(this.password, 12);
+
+  this.passwordConfirm = undefined;
+
+  next();
+});
 
 const User = model<IUser, IUserModel>("User", userSchema);
 
