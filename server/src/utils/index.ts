@@ -9,3 +9,7 @@ export function getEnv(key: string, defaultValue?: any) {
   }
   return value;
 }
+
+export function convertBase64(buffer: Buffer, mimetype: string) {
+  return `data:${mimetype};base64,${buffer.toString("base64")}`;
+}
