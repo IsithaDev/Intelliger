@@ -23,7 +23,12 @@ interface IUser extends Document {
   isActive: boolean;
 }
 
-interface IUserMethods {}
+interface IUserMethods {
+  correctPassword(
+    candiatePassword: string,
+    userPassword: string
+  ): Promise<boolean>;
+}
 
 interface IUserModel extends Model<IUser, {}, IUserMethods> {}
 
@@ -115,7 +120,7 @@ const userSchema = new Schema<IUser, IUserMethods, IUserModel>(
     passwordChangedAt: Date,
     isActive: {
       type: Boolean,
-      default: false,
+      default: true,
       select: false,
     },
   },
@@ -137,6 +142,10 @@ userSchema.pre<IUserModel>(/^find/, async function (next) {
 });
 
 userSchema.pre("save", async function (next) {
+  if (!this.isNew) {
+    return next();
+  }
+
   const baseUsername = `@${this.firstName.toLowerCase()}`;
 
   let username = `${baseUsername}`;
@@ -164,6 +173,13 @@ userSchema.pre("save", async function (next) {
 
   next();
 });
+
+userSchema.method(
+  "correctPassword",
+  async function correctPassword(candiatePassword, userPassword) {
+    return await bcrypt.compare(candiatePassword, userPassword);
+  }
+);
 
 const User = model<IUser, IUserModel>("User", userSchema);
 
