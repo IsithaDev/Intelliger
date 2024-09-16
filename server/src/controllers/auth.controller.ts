@@ -1,11 +1,11 @@
 import { NextFunction, Request, Response } from "express";
-import { UploadApiResponse } from "cloudinary";
+import crypto from "crypto";
 
 import catchAsync from "../utils/catchAsync";
 import User from "../models/user.model";
-import Cloudinary from "../utils/cloudinary";
 import AppError from "../utils/appError";
-import { convertBase64, getCookieOptions, getTokens } from "../utils";
+import { getCookieOptions, getTokens } from "../utils";
+import sendEmail from "../utils/email";
 
 const register = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -14,41 +14,44 @@ const register = catchAsync(
       lastName: req.body.lastName,
       gender: req.body.gender,
       dateOfBirth: req.body.dateOfBirth,
-      email: req.body.email,
+      email: {
+        email: req.body.email,
+      },
       password: req.body.password,
       passwordConfirm: req.body.passwordConfirm,
     });
 
-    if (req.file) {
-      const dataURI = convertBase64(req.file.buffer, req.file.mimetype);
+    const token = newUser.createEmailVerificationToken();
 
-      const uploadResult: UploadApiResponse = await Cloudinary.uploader.upload(
-        dataURI,
-        {
-          upload_preset: "intelliger",
-          folder: "Intelliger/users",
-          transformation: {
-            width: 200,
-            height: 200,
-            crop: "fill",
-          },
-        }
-      );
+    await newUser.save({ validateBeforeSave: false });
 
-      if (!uploadResult) {
-        await newUser.deleteOne();
-        return next(new AppError("There was an error uploading image.", 500));
-      }
+    try {
+      const message = `Click this link to verify your email: https://your-app.com/verify-email?token=${token}`;
 
-      newUser.images.profile.publicId = uploadResult.public_id;
-      newUser.images.profile.url = uploadResult.secure_url;
+      await sendEmail({
+        to: newUser.email.email,
+        subject: "Verify your email address",
+        text: message,
+      });
+
+      res.status(201).json({
+        status: "success",
+        message:
+          "User registered successfully! Please verify your email address.",
+      });
+    } catch (error) {
+      newUser.email.verificationToken = undefined;
+      newUser.email.verificationTokenExpires = undefined;
       await newUser.save({ validateBeforeSave: false });
-    }
 
-    res.status(201).json({
-      status: "success",
-      message: "User registered successfully!",
-    });
+      return next(
+        new AppError(
+          "There was an error sending the email. Try again later!",
+          500,
+          "SENDING_EMAIL_ERROR"
+        )
+      );
+    }
   }
 );
 
@@ -64,16 +67,22 @@ const login = catchAsync(
 
     let user;
 
-    if (usernameOrEmail.startsWith("@")) {
-      user = await User.findOne({ username: usernameOrEmail }).select(
-        "+password"
-      );
-    } else {
-      user = await User.findOne({ email: usernameOrEmail }).select("+password");
-    }
+    user = await User.findOne({
+      $or: [{ username: usernameOrEmail }, { "email.email": usernameOrEmail }],
+    }).select("+password");
 
     if (!user) {
       return next(new AppError(`Invalid username or email address.`, 400));
+    }
+
+    if (!user.email.isVerified) {
+      return next(
+        new AppError(
+          "Please verify your email address!",
+          403,
+          "EMAIL_NOT_VERIFIED"
+        )
+      );
     }
 
     const correctPassword = await user.correctPassword(password, user.password);
@@ -84,12 +93,12 @@ const login = catchAsync(
 
     const { refreshToken, accessToken } = getTokens(user.id);
 
-    const { refresh_token_cookieOptions, access_token_cookieOptions } =
+    const { refreshTokenCookieOptions, accessTokenCookieOptions } =
       getCookieOptions();
 
-    res.cookie("refresh_token", refreshToken, refresh_token_cookieOptions);
-    res.cookie("access_token", accessToken, access_token_cookieOptions);
-    res.cookie("logged_in", true, access_token_cookieOptions);
+    res.cookie("refresh_token", refreshToken, refreshTokenCookieOptions);
+    res.cookie("access_token", accessToken, accessTokenCookieOptions);
+    res.cookie("logged_in", true, accessTokenCookieOptions);
 
     res.status(200).json({
       status: "success",
@@ -98,7 +107,112 @@ const login = catchAsync(
   }
 );
 
+const sendEmailVerification = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { email } = req.body;
+
+    if (!email) {
+      return next(new AppError("Please provide your email address.", 400));
+    }
+
+    const user = await User.findOne({ "email.email": email });
+
+    if (!user) {
+      return next(new AppError("User not found with this email address.", 404));
+    }
+
+    if (user.email.isVerified) {
+      return next(
+        new AppError(
+          "Email address is already verified.",
+          400,
+          "EMAIL_ALREADY_VERIFIED"
+        )
+      );
+    }
+
+    const token = user.createEmailVerificationToken();
+
+    await user.save({ validateBeforeSave: false });
+
+    try {
+      const message = `Click this link to verify your email: https://your-app.com/verify-email?token=${token}`;
+
+      await sendEmail({
+        to: user.email.email,
+        subject: "Verify your email address",
+        text: message,
+      });
+
+      res.status(201).json({
+        status: "success",
+        message:
+          "User registered successfully! Please verify your email address.",
+      });
+    } catch (error) {
+      user.email.verificationToken = undefined;
+      user.email.verificationTokenExpires = undefined;
+      await user.save({ validateBeforeSave: false });
+
+      return next(
+        new AppError(
+          "There was an error sending the email. Try again later!",
+          500,
+          "SENDING_EMAIL_ERROR"
+        )
+      );
+    }
+  }
+);
+
+const verifyEmail = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { token } = req.query;
+
+    const hashedToken = crypto
+      .createHash("sha256")
+      .update(token as string)
+      .digest("hex");
+
+    const user = await User.findOne({
+      "email.verificationToken": hashedToken,
+      "email.verificationTokenExpires": { $gt: Date.now() },
+    });
+
+    if (!user) {
+      return next(new AppError("Invalid or expired verification token.", 400));
+    }
+
+    user.email.isVerified = true;
+    user.email.verificationToken = undefined;
+    user.email.verificationTokenExpires = undefined;
+
+    await user.save({ validateBeforeSave: false });
+
+    res.status(200).json({
+      status: "success",
+      message: "Email verified successfully!",
+    });
+  }
+);
+
+const logout = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    res.clearCookie("refresh_token");
+    res.clearCookie("access_token");
+    res.clearCookie("logged_in");
+
+    res.status(200).json({
+      status: "success",
+      message: "Logged out successfully!",
+    });
+  }
+);
+
 export default {
   register,
   login,
+  sendEmailVerification,
+  verifyEmail,
+  logout,
 };

@@ -38,10 +38,10 @@ export function getTokens(id: string): {
 }
 
 export function getCookieOptions(): {
-  refresh_token_cookieOptions: CookieOptions;
-  access_token_cookieOptions: CookieOptions;
+  refreshTokenCookieOptions: CookieOptions;
+  accessTokenCookieOptions: CookieOptions;
 } {
-  const refresh_token_cookieOptions: CookieOptions = {
+  const refreshTokenCookieOptions: CookieOptions = {
     httpOnly: true,
     secure: getEnv("NODE_ENV") === "production",
     sameSite: "strict",
@@ -51,7 +51,7 @@ export function getCookieOptions(): {
     ),
   };
 
-  const access_token_cookieOptions: CookieOptions = {
+  const accessTokenCookieOptions: CookieOptions = {
     httpOnly: true,
     secure: getEnv("NODE_ENV") === "production",
     sameSite: "strict",
@@ -60,5 +60,5 @@ export function getCookieOptions(): {
     ),
   };
 
-  return { refresh_token_cookieOptions, access_token_cookieOptions };
+  return { refreshTokenCookieOptions, accessTokenCookieOptions };
 }

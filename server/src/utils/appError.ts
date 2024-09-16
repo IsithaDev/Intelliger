@@ -1,4 +1,4 @@
-type Code = "ERROR" | "SENDING_EMAIL_ERROR" | "EMAIL_NOT_VERIFIED";
+import { Code } from "../types";
 
 class AppError extends Error {
   statusCode: number;

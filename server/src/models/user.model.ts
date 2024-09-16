@@ -1,6 +1,7 @@
 import { Document, model, Model, Schema } from "mongoose";
 import validator from "validator";
 import bcrypt from "bcrypt";
+import crypto from "crypto";
 
 import { Image } from "../types";
 
@@ -16,10 +17,21 @@ interface IUser extends Document {
     cover: Image;
   };
   role: "user" | "admin";
-  email: string;
+  email: {
+    email: string;
+    isVerified: boolean;
+    verificationToken: string | undefined;
+    verificationTokenExpires: Date | undefined;
+  };
   password: string;
   passwordConfirm: string | undefined;
   passwordChangedAt: Date;
+  twoFactor: {
+    isEnabled: boolean;
+    isVerified: boolean;
+    secret: string;
+    expiresAt: Date;
+  };
   isActive: boolean;
 }
 
@@ -28,6 +40,8 @@ interface IUserMethods {
     candiatePassword: string,
     userPassword: string
   ): Promise<boolean>;
+
+  createEmailVerificationToken(): string;
 }
 
 interface IUserModel extends Model<IUser, {}, IUserMethods> {}
@@ -89,12 +103,20 @@ const userSchema = new Schema<IUser, IUserMethods, IUserModel>(
       default: "user",
     },
     email: {
-      type: String,
-      required: [true, "Please provide your email address."],
-      unique: true,
-      lowercase: true,
-      trim: true,
-      validate: [validator.isEmail, "Please enter a valid email address."],
+      email: {
+        type: String,
+        required: [true, "Please provide your email address."],
+        unique: true,
+        lowercase: true,
+        trim: true,
+        validate: [validator.isEmail, "Please enter a valid email address."],
+      },
+      isVerified: {
+        type: Boolean,
+        default: false,
+      },
+      verificationToken: String,
+      verificationTokenExpires: Date,
     },
     password: {
       type: String,
@@ -118,6 +140,18 @@ const userSchema = new Schema<IUser, IUserMethods, IUserModel>(
       select: false,
     },
     passwordChangedAt: Date,
+    twoFactor: {
+      isEnabled: {
+        type: Boolean,
+        default: false,
+      },
+      isVerified: {
+        type: Boolean,
+        default: false,
+      },
+      secret: String,
+      expiresAt: Date,
+    },
     isActive: {
       type: Boolean,
       default: true,
@@ -178,6 +212,21 @@ userSchema.method(
   "correctPassword",
   async function correctPassword(candiatePassword, userPassword) {
     return await bcrypt.compare(candiatePassword, userPassword);
+  }
+);
+
+userSchema.method(
+  "createEmailVerificationToken",
+  function createEmailVerificationToken() {
+    const token = crypto.randomBytes(32).toString("hex");
+
+    this.email.verificationToken = crypto
+      .createHash("sha256")
+      .update(token)
+      .digest("hex");
+    this.email.verificationTokenExpires = new Date(Date.now() + 10 * 60 * 1000);
+
+    return token;
   }
 );
 
