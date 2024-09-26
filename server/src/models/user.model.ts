@@ -5,7 +5,7 @@ import crypto from "crypto";
 
 import { Image } from "../types";
 
-interface IUser extends Document {
+export interface IUser extends Document {
   _id: string;
   firstName: string;
   lastName: string;
@@ -42,6 +42,8 @@ interface IUserMethods {
   ): Promise<boolean>;
 
   createEmailVerificationToken(): string;
+
+  changedPasswordAfter(JWTTimestamp: number | undefined): boolean;
 }
 
 interface IUserModel extends Model<IUser, {}, IUserMethods> {}
@@ -208,6 +210,16 @@ userSchema.pre("save", async function (next) {
   next();
 });
 
+userSchema.pre("save", async function (next) {
+  if (this.isNew || !this.isModified("password")) {
+    return next();
+  }
+
+  this.passwordChangedAt = new Date(Date.now() - 1000);
+
+  next();
+});
+
 userSchema.method(
   "correctPassword",
   async function correctPassword(candiatePassword, userPassword) {
@@ -227,6 +239,19 @@ userSchema.method(
     this.email.verificationTokenExpires = new Date(Date.now() + 10 * 60 * 1000);
 
     return token;
+  }
+);
+
+userSchema.method(
+  "changedPasswordAfter",
+  function changedPasswordAfter(JWTTimestamp) {
+    if (this.passwordChangedAt) {
+      const changedTimestamp = this.passwordChangedAt.getTime() / 1000;
+
+      return JWTTimestamp < changedTimestamp;
+    }
+
+    return false;
   }
 );
 

@@ -41,23 +41,22 @@ export function getCookieOptions(): {
   refreshTokenCookieOptions: CookieOptions;
   accessTokenCookieOptions: CookieOptions;
 } {
+  const isProduction = getEnv("NODE_ENV") === "production";
+
   const refreshTokenCookieOptions: CookieOptions = {
     httpOnly: true,
-    secure: getEnv("NODE_ENV") === "production",
-    sameSite: "strict",
-    expires: new Date(
-      Date.now() +
-        getEnv("COOKIE_REFRESH_TOKEN_EXPIRES_IN") * 24 * 60 * 60 * 1000
-    ),
+    secure: isProduction,
+    // sameSite: isProduction ? "none" : "lax",
+    sameSite: "none",
+    maxAge: getEnv("COOKIE_REFRESH_TOKEN_EXPIRES_IN") * 24 * 60 * 60 * 1000,
   };
 
   const accessTokenCookieOptions: CookieOptions = {
     httpOnly: true,
-    secure: getEnv("NODE_ENV") === "production",
-    sameSite: "strict",
-    expires: new Date(
-      Date.now() + getEnv("COOKIE_ACCESS_TOKEN_EXPIRES_IN") * 60 * 1000
-    ),
+    secure: isProduction,
+    // sameSite: isProduction ? "none" : "lax",
+    sameSite: "none",
+    maxAge: getEnv("COOKIE_ACCESS_TOKEN_EXPIRES_IN") * 60 * 1000,
   };
 
   return { refreshTokenCookieOptions, accessTokenCookieOptions };

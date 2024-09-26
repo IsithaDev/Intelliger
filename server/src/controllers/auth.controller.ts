@@ -1,11 +1,16 @@
 import { NextFunction, Request, Response } from "express";
 import crypto from "crypto";
+import jwt, { JwtPayload } from "jsonwebtoken";
 
 import catchAsync from "../utils/catchAsync";
-import User from "../models/user.model";
+import User, { IUser } from "../models/user.model";
 import AppError from "../utils/appError";
-import { getCookieOptions, getTokens } from "../utils";
+import { getCookieOptions, getEnv, getTokens } from "../utils";
 import sendEmail from "../utils/email";
+
+export interface AuthRequest extends Request {
+  user?: IUser;
+}
 
 const register = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -107,6 +112,54 @@ const login = catchAsync(
   }
 );
 
+const refresh = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const currentRefreshToken = req.cookies.refresh_token;
+
+    if (!currentRefreshToken) {
+      return next(
+        new AppError("No refresh token found. Please login in again!", 404)
+      );
+    }
+
+    const refreshTokenSecret = getEnv("JWT_REFRESH_TOKEN_SECRET");
+
+    const decoded = jwt.verify(
+      currentRefreshToken,
+      refreshTokenSecret
+    ) as JwtPayload;
+
+    const currentUser = await User.findById(decoded.id);
+
+    if (!currentUser) {
+      return next(
+        new AppError("User belong to this refresh token no longer exists!", 404)
+      );
+    }
+    if (currentUser.changedPasswordAfter(decoded.iat)) {
+      return next(
+        new AppError(
+          "User recently changed the password. Please login in again!",
+          400
+        )
+      );
+    }
+
+    const { refreshToken, accessToken } = getTokens(currentUser.id);
+
+    const { refreshTokenCookieOptions, accessTokenCookieOptions } =
+      getCookieOptions();
+
+    res.cookie("refresh_token", refreshToken, refreshTokenCookieOptions);
+    res.cookie("access_token", accessToken, accessTokenCookieOptions);
+    res.cookie("logged_in", true, accessTokenCookieOptions);
+
+    res.status(200).json({
+      status: "success",
+    });
+  }
+);
+
 const sendEmailVerification = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const { email } = req.body;
@@ -147,7 +200,7 @@ const sendEmailVerification = catchAsync(
       res.status(201).json({
         status: "success",
         message:
-          "User registered successfully! Please verify your email address.",
+          "Verification token send successfully! Please verify your email address.",
       });
     } catch (error) {
       user.email.verificationToken = undefined;
@@ -209,10 +262,39 @@ const logout = catchAsync(
   }
 );
 
+const updatePassword = catchAsync(
+  async (req: AuthRequest, res: Response, next: NextFunction) => {
+    const user = await User.findById(req.user?.id).select("+password");
+
+    if (!user) {
+      return next(new AppError("Can't find user with id", 404));
+    }
+
+    const isCorrectPassword = await user.correctPassword(
+      req.body.currentPassword,
+      user.password
+    );
+
+    if (!isCorrectPassword) {
+      return next(new AppError("Password is incorrect!", 400));
+    }
+
+    user.password = req.body.newPassword;
+    user.passwordConfirm = req.body.passwordConfirm;
+    await user.save();
+
+    res.status(200).json({
+      status: "success",
+    });
+  }
+);
+
 export default {
   register,
   login,
+  refresh,
   sendEmailVerification,
   verifyEmail,
   logout,
+  updatePassword,
 };
