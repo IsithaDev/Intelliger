@@ -4,11 +4,12 @@ import {
   Route,
 } from "react-router-dom";
 
-import { App, NotFound, RootLayout } from "../app";
+import { App, NotFound, RootLayout, Unauthorized } from "../app";
 import { ForgotPassword, ResetPassword, SignIn, SignUp } from "../app/(auth)";
 import { Explore, Home, Profile, Saved } from "../app/(base)";
 import { Dashboard } from "../app/(dashboard)";
 import PageLoading from "../components/ui/PageLoading";
+import ProtectedRoute from "./ProtectedRoute";
 
 const router = createBrowserRouter(
   createRoutesFromElements(
@@ -57,53 +58,66 @@ const router = createBrowserRouter(
         }
       >
         {/* User Routes */}
-        <Route
-          index
-          element={
-            <PageLoading>
-              <Home />
-            </PageLoading>
-          }
-        />
-        <Route
-          path="/explore"
-          element={
-            <PageLoading>
-              <Explore />
-            </PageLoading>
-          }
-        />
-        <Route
-          path="/saved"
-          element={
-            <PageLoading>
-              <Saved />
-            </PageLoading>
-          }
-        />
-        <Route
-          path="/profile/:id"
-          element={
-            <PageLoading>
-              <Profile />
-            </PageLoading>
-          }
-        />
-
-        {/* Admin Routes */}
-        <Route path="/dashboard">
+        <Route element={<ProtectedRoute requiredRoutes={["admin", "user"]} />}>
           <Route
             index
             element={
               <PageLoading>
-                <Dashboard />
+                <Home />
+              </PageLoading>
+            }
+          />
+          <Route
+            path="/explore"
+            element={
+              <PageLoading>
+                <Explore />
+              </PageLoading>
+            }
+          />
+          <Route
+            path="/saved"
+            element={
+              <PageLoading>
+                <Saved />
+              </PageLoading>
+            }
+          />
+          <Route
+            path="/profile/:id"
+            element={
+              <PageLoading>
+                <Profile />
               </PageLoading>
             }
           />
         </Route>
+
+        {/* Admin Routes */}
+        <Route element={<ProtectedRoute requiredRoutes={["admin"]} />}>
+          <Route path="/dashboard">
+            <Route
+              index
+              element={
+                <PageLoading>
+                  <Dashboard />
+                </PageLoading>
+              }
+            />
+          </Route>
+        </Route>
       </Route>
-    </Route>
-  )
+
+      <Route
+        path="/unauthorized"
+        element={
+          <PageLoading>
+            <Unauthorized />
+          </PageLoading>
+        }
+      />
+    </Route>,
+  ),
 );
 
 export default router;
