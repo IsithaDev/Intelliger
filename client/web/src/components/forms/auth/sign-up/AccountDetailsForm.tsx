@@ -12,30 +12,30 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { PersonalInformationFormSchema } from "@/lib/validations";
+import { accountDetailsFormSchema } from "@/lib/validations";
 
-const PersonalInformationForm = () => {
-  const form = useForm<z.infer<typeof PersonalInformationFormSchema>>({
-    resolver: zodResolver(PersonalInformationFormSchema),
+const AccountDetailsForm = () => {
+  const form = useForm<z.infer<typeof accountDetailsFormSchema>>({
+    resolver: zodResolver(accountDetailsFormSchema),
     defaultValues: {
-      firstName: "",
-      lastName: "",
+      email: "",
+      password: "",
+      passwordConfirm: "",
     },
   });
 
-  function onSubmit(values: z.infer<typeof PersonalInformationFormSchema>) {
+  function onSubmit(values: z.infer<typeof accountDetailsFormSchema>) {
     console.log(values);
   }
-
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         <FormField
           control={form.control}
-          name="firstName"
+          name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Fist name</FormLabel>
+              <FormLabel>Email</FormLabel>
               <FormControl>
                 <Input placeholder="shadcn" {...field} />
               </FormControl>
@@ -45,12 +45,25 @@ const PersonalInformationForm = () => {
         />
         <FormField
           control={form.control}
-          name="lastName"
+          name="password"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Last name</FormLabel>
+              <FormLabel>Password</FormLabel>
               <FormControl>
-                <Input placeholder="shadcn" {...field} />
+                <Input type="password" placeholder="shadcn" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="passwordConfirm"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Conform Password</FormLabel>
+              <FormControl>
+                <Input type="password" placeholder="shadcn" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -62,4 +75,4 @@ const PersonalInformationForm = () => {
   );
 };
 
-export default PersonalInformationForm;
+export default AccountDetailsForm;

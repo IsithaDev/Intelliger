@@ -2,7 +2,7 @@ import axios from "axios";
 import Cookies from "js-cookie";
 
 const axiosInstance = axios.create({
-  baseURL: import.meta.env.BASE_URL,
+  baseURL: import.meta.env.VITE_BASE_URL,
   headers: { "Content-Type": "application/json" },
   withCredentials: true,
 });
@@ -39,7 +39,7 @@ axiosInstance.interceptors.response.use(
       try {
         const refreshToken = Cookies.get("refresh_token");
         const response = await axios.post(
-          `${import.meta.env.BASE_URL}/auth/refresh`,
+          `${import.meta.env.VITE_BASE_URL}/auth/refresh`,
           { token: refreshToken },
           { withCredentials: true },
         );

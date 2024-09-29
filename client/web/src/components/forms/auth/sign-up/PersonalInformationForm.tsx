@@ -12,30 +12,30 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { AccountDetailsFormSchema } from "@/lib/validations";
+import { personalInformationFormSchema } from "@/lib/validations";
 
-const AccountDetailsForm = () => {
-  const form = useForm<z.infer<typeof AccountDetailsFormSchema>>({
-    resolver: zodResolver(AccountDetailsFormSchema),
+const PersonalInformationForm = () => {
+  const form = useForm<z.infer<typeof personalInformationFormSchema>>({
+    resolver: zodResolver(personalInformationFormSchema),
     defaultValues: {
-      email: "",
-      password: "",
-      passwordConfirm: "",
+      firstName: "",
+      lastName: "",
     },
   });
 
-  function onSubmit(values: z.infer<typeof AccountDetailsFormSchema>) {
+  function onSubmit(values: z.infer<typeof personalInformationFormSchema>) {
     console.log(values);
   }
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         <FormField
           control={form.control}
-          name="email"
+          name="firstName"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Email</FormLabel>
+              <FormLabel>Fist name</FormLabel>
               <FormControl>
                 <Input placeholder="shadcn" {...field} />
               </FormControl>
@@ -45,34 +45,22 @@ const AccountDetailsForm = () => {
         />
         <FormField
           control={form.control}
-          name="password"
+          name="lastName"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Password</FormLabel>
+              <FormLabel>Last name</FormLabel>
               <FormControl>
-                <Input type="password" placeholder="shadcn" {...field} />
+                <Input placeholder="shadcn" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
-        <FormField
-          control={form.control}
-          name="passwordConfirm"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Conform Password</FormLabel>
-              <FormControl>
-                <Input type="password" placeholder="shadcn" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <Button type="submit">Submit</Button>
+
+        <Button type="submit">submit</Button>
       </form>
     </Form>
   );
 };
 
-export default AccountDetailsForm;
+export default PersonalInformationForm;

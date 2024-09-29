@@ -12,19 +12,19 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { BasicDetailsFormSchema } from "@/lib/validations";
+import { basicDetailsFormSchema } from "@/lib/validations";
 import { RadioGroup, RadioGroupItem } from "@radix-ui/react-radio-group";
 
 const BasicDetailsForm = () => {
-  const form = useForm<z.infer<typeof BasicDetailsFormSchema>>({
-    resolver: zodResolver(BasicDetailsFormSchema),
+  const form = useForm<z.infer<typeof basicDetailsFormSchema>>({
+    resolver: zodResolver(basicDetailsFormSchema),
     defaultValues: {
       gender: "male",
       dateOfBirth: "",
     },
   });
 
-  function onSubmit(values: z.infer<typeof BasicDetailsFormSchema>) {
+  function onSubmit(values: z.infer<typeof basicDetailsFormSchema>) {
     console.log(values);
   }
   return (

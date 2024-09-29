@@ -2,12 +2,6 @@ import { createContext, useEffect, useState } from "react";
 
 type Theme = "dark" | "light" | "system";
 
-interface ThemeProviderProps {
-  children: React.ReactNode;
-  defaultTheme?: Theme;
-  storageKey?: string;
-}
-
 type ThemeProviderState = {
   theme: Theme;
   setTheme: (theme: Theme) => void;
@@ -20,6 +14,12 @@ const initialState: ThemeProviderState = {
 
 export const ThemeProviderContext =
   createContext<ThemeProviderState>(initialState);
+
+interface ThemeProviderProps {
+  children: React.ReactNode;
+  defaultTheme?: Theme;
+  storageKey?: string;
+}
 
 function ThemeProvider({
   children,

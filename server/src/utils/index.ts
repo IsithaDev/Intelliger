@@ -46,16 +46,16 @@ export function getCookieOptions(): {
   const refreshTokenCookieOptions: CookieOptions = {
     httpOnly: true,
     secure: isProduction,
-    // sameSite: isProduction ? "none" : "lax",
-    sameSite: "none",
+    sameSite: isProduction ? "none" : "lax",
+    path: "/",
     maxAge: getEnv("COOKIE_REFRESH_TOKEN_EXPIRES_IN") * 24 * 60 * 60 * 1000,
   };
 
   const accessTokenCookieOptions: CookieOptions = {
     httpOnly: true,
     secure: isProduction,
-    // sameSite: isProduction ? "none" : "lax",
-    sameSite: "none",
+    sameSite: isProduction ? "none" : "lax",
+    path: "/",
     maxAge: getEnv("COOKIE_ACCESS_TOKEN_EXPIRES_IN") * 60 * 1000,
   };
 

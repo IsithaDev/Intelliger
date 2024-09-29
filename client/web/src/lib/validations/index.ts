@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const PersonalInformationFormSchema = z.object({
+export const personalInformationFormSchema = z.object({
   firstName: z
     .string({
       required_error: "Please provide your first name.",
@@ -24,7 +24,7 @@ export const PersonalInformationFormSchema = z.object({
     .trim(),
 });
 
-export const BasicDetailsFormSchema = z.object({
+export const basicDetailsFormSchema = z.object({
   gender: z
     .enum(["male", "female"], {
       required_error: "Gender must be either 'male' or 'female'.",
@@ -55,7 +55,7 @@ export const BasicDetailsFormSchema = z.object({
     ),
 });
 
-export const AccountDetailsFormSchema = z
+export const accountDetailsFormSchema = z
   .object({
     email: z
       .string()
@@ -80,3 +80,20 @@ export const AccountDetailsFormSchema = z
     path: ["passwordConfirm"],
     message: "Passwords do not match.",
   });
+
+export const signUpFormSchema = z.object({
+  usernameOrEmail: z
+    .string()
+    .min(1, {
+      message: "Please provide your username or email address.",
+    })
+    .refine(
+      (value) =>
+        value.startsWith("@") || z.string().email().safeParse(value).success,
+      {
+        message:
+          "Please provide a valid username (starting with '@') or a valid email address.",
+      },
+    ),
+  password: z.string().min(1, { message: "Please provide your password." }),
+});
