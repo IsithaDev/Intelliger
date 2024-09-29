@@ -6,11 +6,11 @@ import Bottombar from "../components/shared/Bottombar";
 
 const RootLayout = () => {
   return (
-    <div className="flex-1 flex flex-col relative">
+    <div className="relative flex flex-1 flex-col">
       <Topbar />
-      <div className="flex flex-1 relative">
+      <div className="relative flex flex-1">
         <Sidebar />
-        <div className="flex-1 flex">
+        <div className="flex flex-1">
           <Outlet />
         </div>
       </div>

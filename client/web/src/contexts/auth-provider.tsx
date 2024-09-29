@@ -4,15 +4,13 @@ import { IUser } from "@/lib/types";
 
 interface AuthProviderState {
   user: IUser | null;
-  accessToken: string | null;
-  setCredentials: (user: IUser, accessToken: string) => void;
+  setUser: (user: IUser) => void;
   logout: () => void;
 }
 
 const initialState: AuthProviderState = {
   user: null,
-  accessToken: null,
-  setCredentials: () => null,
+  setUser: () => null,
   logout: () => null,
 };
 
@@ -25,22 +23,14 @@ interface AuthProviderProps {
 
 function AuthProvider({ children, ...props }: AuthProviderProps) {
   const [user, setUser] = useState<IUser | null>(initialState.user);
-  const [accessToken, setAccessToken] = useState<string | null>(null);
-
-  const setCredentials = (user: IUser, accessToken: string) => {
-    setUser(user);
-    setAccessToken(accessToken);
-  };
 
   const logout = () => {
     setUser(null);
-    setAccessToken(null);
   };
 
   const value = {
     user,
-    accessToken,
-    setCredentials,
+    setUser,
     logout,
   };
 

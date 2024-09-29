@@ -1,4 +1,5 @@
 import axiosInstance from "../lib/axios";
+import errorHandler from "./errorHandler";
 
 export const login = async (credentials: {
   usernameOrEmail: string;
@@ -9,20 +10,28 @@ export const login = async (credentials: {
 
     return response.data;
   } catch (error: any) {
-    console.error(error);
-    // if (error.response) {
-    //   console.error("Login failed:", error.response.data);
-    //   throw new Error(
-    //     error.response.data.message || "Login failed. Please try again.",
-    //   );
-    // } else if (error.request) {
-    //   console.error("No response received:", error.request);
-    //   throw new Error(
-    //     "Unable to communicate with the server. Please try again later.",
-    //   );
-    // } else {
-    //   console.error("Error:", error.message);
-    //   throw new Error("An unexpected error occurred. Please try again.");
-    // }
+    errorHandler(error);
+  }
+};
+
+export const forgotPassword = async (email: string) => {
+  try {
+    const response = await axiosInstance.post("/auth/forgot-password", email);
+
+    return response.data;
+  } catch (error: any) {
+    errorHandler(error);
+  }
+};
+
+export const resetPassword = async (token: string) => {
+  try {
+    const response = await axiosInstance.get(
+      `/auth/reset-password?token=${token}`,
+    );
+
+    return response.data;
+  } catch (error: any) {
+    errorHandler(error);
   }
 };

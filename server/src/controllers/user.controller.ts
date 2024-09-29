@@ -3,6 +3,13 @@ import { NextFunction, Request, Response } from "express";
 import User from "../models/user.model";
 import AppError from "../utils/appError";
 import catchAsync from "../utils/catchAsync";
+import { AuthRequest } from "./auth.controller";
+
+const getMe = (req: AuthRequest, res: Response, next: NextFunction) => {
+  req.params.user = req.user?.id;
+
+  next();
+};
 
 const getAllUsers = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -92,6 +99,7 @@ const deleteUser = catchAsync(
 );
 
 export default {
+  getMe,
   getAllUsers,
   getUser,
   createUser,
