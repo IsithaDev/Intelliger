@@ -64,15 +64,17 @@ const login = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const { usernameOrEmail, password } = req.body;
 
-    if (!usernameOrEmail || !password) {
+    if (!usernameOrEmail) {
       return next(
-        new AppError("Please provide your email address and password.", 400)
+        new AppError("Please provide your username or email address.", 400)
       );
     }
 
-    let user;
+    if (!password) {
+      return next(new AppError("Please provide your password.", 400));
+    }
 
-    user = await User.findOne({
+    const user = await User.findOne({
       $or: [{ username: usernameOrEmail }, { "email.email": usernameOrEmail }],
     }).select("+password");
 
@@ -96,18 +98,21 @@ const login = catchAsync(
       return next(new AppError("Incorrect password.", 400));
     }
 
-    const { refreshToken, accessToken } = getTokens(user.id);
+    const { refresh_token, access_token } = getTokens(user.id);
 
-    const { refreshTokenCookieOptions, accessTokenCookieOptions } =
-      getCookieOptions();
+    const {
+      refreshTokenCookieOptions,
+      accessTokenCookieOptions,
+      loggedInCookieOptions,
+    } = getCookieOptions();
 
-    res.cookie("refresh_token", refreshToken, refreshTokenCookieOptions);
-    res.cookie("access_token", accessToken, accessTokenCookieOptions);
-    res.cookie("logged_in", true, accessTokenCookieOptions);
+    res.cookie("refresh_token", refresh_token, refreshTokenCookieOptions);
+    res.cookie("access_token", access_token, accessTokenCookieOptions);
+    res.cookie("logged_in", true, loggedInCookieOptions);
 
     res.status(200).json({
       status: "success",
-      message: "Logged in successfully!",
+      access_token,
     });
   }
 );
@@ -145,17 +150,21 @@ const refresh = catchAsync(
       );
     }
 
-    const { refreshToken, accessToken } = getTokens(currentUser.id);
+    const { access_token, refresh_token } = getTokens(currentUser.id);
 
-    const { refreshTokenCookieOptions, accessTokenCookieOptions } =
-      getCookieOptions();
+    const {
+      refreshTokenCookieOptions,
+      accessTokenCookieOptions,
+      loggedInCookieOptions,
+    } = getCookieOptions();
 
-    res.cookie("refresh_token", refreshToken, refreshTokenCookieOptions);
-    res.cookie("access_token", accessToken, accessTokenCookieOptions);
-    res.cookie("logged_in", true, accessTokenCookieOptions);
+    res.cookie("refresh_token", refresh_token, refreshTokenCookieOptions);
+    res.cookie("access_token", access_token, accessTokenCookieOptions);
+    res.cookie("logged_in", true, loggedInCookieOptions);
 
     res.status(200).json({
       status: "success",
+      access_token,
     });
   }
 );

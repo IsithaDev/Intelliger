@@ -1,11 +1,8 @@
-import dotenv from "dotenv";
 import mongoose from "mongoose";
 import { createServer } from "http";
 
 import app from "./app";
 import { getEnv } from "./utils";
-
-dotenv.config();
 
 const port = getEnv("PORT", 3000);
 const mongodb_password = getEnv("MONGODB_PASSWORD");

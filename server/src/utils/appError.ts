@@ -1,16 +1,15 @@
-import { Code } from "../types";
+import { Name } from "../types";
 
 class AppError extends Error {
   statusCode: number;
   status: string;
-  code?: Code;
   isOperational: boolean;
 
-  constructor(message: string, statusCode: number, code?: Code) {
+  constructor(message: string, statusCode: number, name?: Name) {
     super(message);
     this.statusCode = statusCode;
     this.status = `${statusCode}`.startsWith("4") ? "fail" : "error";
-    this.code = code;
+    if (name) this.name = name;
     this.isOperational = true;
 
     Error.captureStackTrace(this, this.constructor);

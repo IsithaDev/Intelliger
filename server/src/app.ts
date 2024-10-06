@@ -1,15 +1,19 @@
+import dotenv from "dotenv";
 import express, { NextFunction, Request, Response } from "express";
 import helmet from "helmet";
 import ExpressMongoSanitize from "express-mongo-sanitize";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import rateLimit from "express-rate-limit";
+import morgan from "morgan";
 
 import authRoutes from "./routes/auth.routes";
 import userRoutes from "./routes/user.routes";
 import AppError from "./utils/appError";
 import globalErrorHandler from "./middlewares/globalErrorHandler";
+import { getEnv } from "./utils";
 
+dotenv.config();
 const app = express();
 
 app.use(helmet());
@@ -31,12 +35,13 @@ app.use(cookieParser());
 
 app.disable("x-powered-by");
 
-if (process.env.NODE_ENV === "production") {
+if (getEnv("NODE_ENV") === "development") {
+  app.use(morgan("dev"));
 }
 
 app.use(
   cors({
-    origin: ["http://localhost:5173"],
+    origin: ["http://localhost:5173", "http://localhost:3000"],
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE"],
   })

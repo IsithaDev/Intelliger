@@ -18,46 +18,71 @@ export function convertBase64(buffer: Buffer, mimetype: string) {
 }
 
 export function getTokens(id: string): {
-  refreshToken: string;
-  accessToken: string;
+  refresh_token: string;
+  access_token: string;
 } {
   const refreshTokenSecret = getEnv("JWT_REFRESH_TOKEN_SECRET");
   const refreshTokenExpiresIn = getEnv("JWT_REFRESH_TOKEN_EXPIRES_IN");
   const accessTokenSecret = getEnv("JWT_ACCESS_TOKEN_SECRET");
   const accessTokenExpiresIn = getEnv("JWT_ACCESS_TOKEN_EXPIRES_IN");
 
-  const refreshToken = jwt.sign({ id }, refreshTokenSecret, {
+  const refresh_token = jwt.sign({ id }, refreshTokenSecret, {
     expiresIn: refreshTokenExpiresIn,
   });
 
-  const accessToken = jwt.sign({ id }, accessTokenSecret, {
+  const access_token = jwt.sign({ id }, accessTokenSecret, {
     expiresIn: accessTokenExpiresIn,
   });
 
-  return { refreshToken, accessToken };
+  return { refresh_token, access_token };
 }
 
 export function getCookieOptions(): {
   refreshTokenCookieOptions: CookieOptions;
   accessTokenCookieOptions: CookieOptions;
+  loggedInCookieOptions: CookieOptions;
 } {
   const isProduction = getEnv("NODE_ENV") === "production";
+
+  const refreshExpiresIn = new Date(
+    Date.now() +
+      parseInt(getEnv("COOKIE_REFRESH_TOKEN_EXPIRES_IN"), 10) *
+        24 *
+        60 *
+        60 *
+        1000
+  );
+  const accessExpiresIn = new Date(
+    Date.now() +
+      parseInt(getEnv("COOKIE_ACCESS_TOKEN_EXPIRES_IN"), 10) * 60 * 1000
+  );
 
   const refreshTokenCookieOptions: CookieOptions = {
     httpOnly: true,
     secure: isProduction,
-    sameSite: isProduction ? "none" : "lax",
+    sameSite: isProduction ? "none" : "strict",
     path: "/",
-    maxAge: getEnv("COOKIE_REFRESH_TOKEN_EXPIRES_IN") * 24 * 60 * 60 * 1000,
+    expires: refreshExpiresIn,
   };
 
   const accessTokenCookieOptions: CookieOptions = {
     httpOnly: true,
     secure: isProduction,
-    sameSite: isProduction ? "none" : "lax",
+    sameSite: isProduction ? "none" : "strict",
     path: "/",
-    maxAge: getEnv("COOKIE_ACCESS_TOKEN_EXPIRES_IN") * 60 * 1000,
+    expires: accessExpiresIn,
   };
 
-  return { refreshTokenCookieOptions, accessTokenCookieOptions };
+  const loggedInCookieOptions: CookieOptions = {
+    secure: isProduction,
+    sameSite: isProduction ? "none" : "strict",
+    path: "/",
+    expires: accessExpiresIn,
+  };
+
+  return {
+    refreshTokenCookieOptions,
+    accessTokenCookieOptions,
+    loggedInCookieOptions,
+  };
 }

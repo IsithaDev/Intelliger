@@ -6,7 +6,11 @@ import catchAsync from "../utils/catchAsync";
 import { AuthRequest } from "./auth.controller";
 
 const getMe = (req: AuthRequest, res: Response, next: NextFunction) => {
-  req.params.user = req.user?.id;
+  if (!req.user) {
+    return next(new AppError("Can't find user. Please login again.", 404));
+  }
+
+  req.params.id = req.user.id;
 
   next();
 };

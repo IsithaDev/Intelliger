@@ -6,7 +6,7 @@ import crypto from "crypto";
 import { Image } from "../types";
 
 export interface IUser extends Document {
-  _id: string;
+  id: string;
   firstName: string;
   lastName: string;
   username: string;

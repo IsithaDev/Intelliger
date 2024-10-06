@@ -3,7 +3,7 @@ export type Image = {
   url: string;
 };
 
-export type Code =
+export type Name =
   | "ERROR"
   | "SENDING_EMAIL_ERROR"
   | "EMAIL_NOT_VERIFIED"

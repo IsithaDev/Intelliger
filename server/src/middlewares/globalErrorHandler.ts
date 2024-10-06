@@ -13,7 +13,7 @@ const sendErrorDev = (err: AppError, res: Response) => {
   res.status(err.statusCode).json({
     status: err.status,
     message: err.message,
-    code: err.code,
+    name: err.name,
     stack: err.stack,
     error: err,
   });
@@ -24,7 +24,7 @@ const sendErrorProd = (err: AppError, res: Response) => {
     res.status(err.statusCode).json({
       status: err.status,
       message: err.message,
-      code: err.code,
+      code: err.name,
     });
   } else {
     logger.error(err);
@@ -49,7 +49,7 @@ function globalErrorHandler(
 ) {
   err.statusCode = err.statusCode || 500;
   err.status = err.status || "error";
-  err.code = err.code || "ERROR";
+  err.name = err.name || "ERROR";
 
   if (process.env.NODE_ENV === "development") {
     sendErrorDev(err, res);
